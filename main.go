@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -31,7 +32,7 @@ func initialModel() model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	return model{
-		symbols: []string{"AAPL", "GOOGL", "MSFT"},
+		symbols: []string{"NABIL"},
 		quotes:  make(map[string]float64),
 		loading: true,
 		spinner: s,
@@ -50,9 +51,7 @@ func fetchQuotes() tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(3 * time.Second)
 		quotes := map[string]float64{
-			"AAPL":  145.09,
-			"GOOGL": 2729.30,
-			"MSFT":  289.67,
+			"NABIL": rand.Float64(),
 		}
 		return quotesMsg(quotes)
 	}
@@ -67,6 +66,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "a":
+
+		case "r":
+			m.loading = true
+			return m, fetchQuotes()
 
 		case "enter":
 		}
@@ -103,12 +106,23 @@ func (m model) View() string {
 		return fmt.Sprintf("Error: %v", m.err)
 	}
 
+	menuStyle := lipgloss.NewStyle().
+		Padding(1, 2).
+		Foreground(lipgloss.Color("230"))
+
+	menu := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		menuStyle.Render("[a] Add Symbol"),
+		menuStyle.Render("[r] Refresh"),
+		menuStyle.Render("[q] Quit"),
+	)
+
 	if m.loading {
 		return lipgloss.NewStyle().
 			Align(lipgloss.Center).
-			Height(50).
-			Width(50).
-			Render(m.spinner.View() + " Loading stock prices...")
+			Height(40).
+			Width(100).
+			Render(m.spinner.View() + "Loading stock prices...")
 	}
 
 	var rows []string
@@ -117,11 +131,11 @@ func (m model) View() string {
 		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%.2f", m.quotes[symbol]))))
 	}
 
-	s := lipgloss.NewStyle().
+	mainView := lipgloss.NewStyle().
 		Align(lipgloss.Center).
-		Height(50).
-		Width(50).
-		Render("Stock Prices:\n\n" + lipgloss.JoinVertical(lipgloss.Center, rows...))
+		Height(40).
+		Width(100).
+		Render(menu + "\n\n\n\n" + lipgloss.JoinVertical(lipgloss.Center, rows...))
 
-	return s + "\n\n Press q to quit."
+	return mainView
 }
