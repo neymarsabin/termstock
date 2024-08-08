@@ -3,17 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/neymarsabin/termstock/nepse"
 )
 
 type model struct {
 	symbols     []string
-	quotes      map[string]float64
+	quotes      map[string]nepse.Quote
 	err         error
 	loading     bool
 	spinner     spinner.Model
@@ -33,7 +33,7 @@ func initialModel() model {
 	s.Spinner = spinner.Dot
 	return model{
 		symbols: []string{"NABIL"},
-		quotes:  make(map[string]float64),
+		quotes:  make(map[string]nepse.Quote),
 		loading: true,
 		spinner: s,
 	}
@@ -44,15 +44,16 @@ func (m model) Init() tea.Cmd {
 }
 
 type tickMsg struct{}
-type quotesMsg map[string]float64
+type quotesMsg map[string]nepse.Quote
 type errMsg error
 
 func fetchQuotes() tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(3 * time.Second)
-		quotes := map[string]float64{
-			"NABIL": rand.Float64(),
+		nabilData := nepse.Scrape()
+		quotes := map[string]nepse.Quote{
+			"NABIL": *nabilData,
 		}
+		nepse.Scrape()
 		return quotesMsg(quotes)
 	}
 }
@@ -127,8 +128,13 @@ func (m model) View() string {
 
 	var rows []string
 	for _, symbol := range m.symbols {
-		priceStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
-		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%.2f", m.quotes[symbol]))))
+		priceStyle := lipgloss.NewStyle()
+		if m.quotes[symbol].Positive {
+			priceStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#008000"))
+		} else {
+			priceStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0000"))
+		}
+		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%v", m.quotes[symbol].Price))))
 	}
 
 	mainView := lipgloss.NewStyle().
