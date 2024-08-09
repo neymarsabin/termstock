@@ -32,7 +32,7 @@ func initialModel() model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	return model{
-		symbols: []string{"NABIL"},
+		symbols: []string{"NABIL", "HDL"},
 		quotes:  make(map[string]nepse.Quote),
 		loading: true,
 		spinner: s,
@@ -40,20 +40,24 @@ func initialModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, fetchQuotes())
+	return tea.Batch(m.spinner.Tick, fetchQuotes(m.symbols))
 }
 
 type tickMsg struct{}
 type quotesMsg map[string]nepse.Quote
 type errMsg error
 
-func fetchQuotes() tea.Cmd {
+func fetchQuotes(symbols []string) tea.Cmd {
 	return func() tea.Msg {
-		nabilData := nepse.Scrape()
-		quotes := map[string]nepse.Quote{
-			"NABIL": *nabilData,
+		time.Sleep(3 * time.Second)
+		quotes := make(map[string]nepse.Quote)
+
+		for _, symbol := range symbols {
+			quoteData := nepse.Scrape(symbol)
+			quotes[symbol] = *quoteData
+			fmt.Println("Quotes: ", quotes)
 		}
-		nepse.Scrape()
+
 		return quotesMsg(quotes)
 	}
 }
@@ -70,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "r":
 			m.loading = true
-			return m, fetchQuotes()
+			return m, fetchQuotes(m.symbols)
 
 		case "enter":
 		}
@@ -123,6 +127,7 @@ func (m model) View() string {
 			Align(lipgloss.Center).
 			Height(40).
 			Width(100).
+			Foreground(lipgloss.Color("#4287f5")).
 			Render(m.spinner.View() + "Loading stock prices...")
 	}
 
@@ -134,7 +139,7 @@ func (m model) View() string {
 		} else {
 			priceStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0000"))
 		}
-		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%v", m.quotes[symbol].Price))))
+		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%v, (%v)", m.quotes[symbol].Price, m.quotes[symbol].PercentageChange))))
 	}
 
 	mainView := lipgloss.NewStyle().

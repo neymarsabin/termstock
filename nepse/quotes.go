@@ -1,6 +1,7 @@
 package nepse
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gocolly/colly/v2"
@@ -14,13 +15,11 @@ type Quote struct {
 
 type QuotesBySymbol map[string]Quote
 
-func Scrape() *Quote {
-	// Instantiate default collector
+func Scrape(symbol string) *Quote {
 	c := colly.NewCollector()
 	var marketPrice, percentageChange string
 	var positive bool
 
-	// Extract comment
 	c.OnHTML("table tbody tr", func(e *colly.HTMLElement) {
 		if e.ChildText("th:nth-child(1)") == "Market Price" {
 			marketPrice = e.ChildText("td:nth-child(2)")
@@ -31,7 +30,8 @@ func Scrape() *Quote {
 		}
 	})
 
-	c.Visit("https://merolagani.com/CompanyDetail.aspx?symbol=NABIL")
+	url := fmt.Sprintf("https://merolagani.com/CompanyDetail.aspx?symbol=%v", symbol)
+	c.Visit(url)
 
 	quoteValue := &Quote{
 		PercentageChange: percentageChange,
