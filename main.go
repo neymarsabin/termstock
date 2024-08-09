@@ -22,21 +22,26 @@ type model struct {
 }
 
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(initProgram(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Alas, there's been an error: %v", err)
 	}
 }
 
-func initialModel() model {
+func initProgram() model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	return model{
+	//TODO:  fetch symbols from the database
+	// _ := database.Open()
+
+	m := model{
 		symbols: []string{"NABIL", "HDL"},
 		quotes:  make(map[string]nepse.Quote),
 		loading: true,
 		spinner: s,
 	}
+
+	return m
 }
 
 func (m model) Init() tea.Cmd {
@@ -53,9 +58,8 @@ func fetchQuotes(symbols []string) tea.Cmd {
 		quotes := make(map[string]nepse.Quote)
 
 		for _, symbol := range symbols {
-			quoteData := nepse.Scrape(symbol)
+			quoteData := nepse.ScrapeBySymbol(symbol)
 			quotes[symbol] = *quoteData
-			fmt.Println("Quotes: ", quotes)
 		}
 
 		return quotesMsg(quotes)

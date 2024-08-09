@@ -15,7 +15,7 @@ type Quote struct {
 
 type QuotesBySymbol map[string]Quote
 
-func Scrape(symbol string) *Quote {
+func ScrapeBySymbol(symbol string) *Quote {
 	c := colly.NewCollector()
 	var marketPrice, percentageChange string
 	var positive bool
