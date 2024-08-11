@@ -9,7 +9,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/neymarsabin/termstock/database"
 	"github.com/neymarsabin/termstock/nepse"
+	"gorm.io/gorm"
 )
 
 type model struct {
@@ -21,6 +23,7 @@ type model struct {
 	inputSymbol string
 	addMode     bool
 	textInput   textinput.Model
+	db          *gorm.DB
 }
 
 func main() {
@@ -31,8 +34,8 @@ func main() {
 }
 
 func initProgram() model {
-	//TODO:  fetch symbols from the database
-	// _ := database.Open()
+	db := database.Open()
+	symbolsData := database.SymbolsFromDb(db)
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -44,11 +47,12 @@ func initProgram() model {
 	ti.Width = 20
 
 	m := model{
-		symbols:   []string{"NABIL", "HDL", "EBL", "SNLI", "NTC", "SHEL"},
+		symbols:   symbolsData,
 		quotes:    make(map[string]nepse.Quote),
 		loading:   true,
 		spinner:   s,
 		textInput: ti,
+		db:        db,
 	}
 
 	return m
@@ -95,6 +99,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.inputSymbol = ""
 				return m, textinput.Blink
 			}
+
 		case "r":
 			if !m.addMode {
 				m.loading = true
@@ -107,8 +112,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.addMode {
 				m.addMode = false
 				m.inputSymbol = m.textInput.Value()
+
+				if m.inputSymbol == "" {
+					m.loading = true
+					return m, fetchQuotes(m.symbols)
+				}
+
 				m.symbols = append(m.symbols, m.inputSymbol)
 				m.loading = true
+				_ = database.AddSymbol(m.inputSymbol, m.db)
 				return m, fetchQuotes(m.symbols)
 			}
 		}
@@ -191,7 +203,7 @@ func (m model) View() string {
 		} else {
 			priceStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF0000"))
 		}
-		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%v, (%v)", m.quotes[symbol].Price, m.quotes[symbol].PercentageChange))))
+		rows = append(rows, fmt.Sprintf("%s: %s", symbol, priceStyle.Render(fmt.Sprintf("%v (%v)", m.quotes[symbol].Price, m.quotes[symbol].PercentageChange))))
 	}
 
 	mainView := lipgloss.NewStyle().
