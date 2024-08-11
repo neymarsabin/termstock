@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/neymarsabin/termstock/nepse"
@@ -18,7 +19,8 @@ type model struct {
 	loading     bool
 	spinner     spinner.Model
 	inputSymbol string
-	addingMode  bool
+	addMode     bool
+	textInput   textinput.Model
 }
 
 func main() {
@@ -29,16 +31,24 @@ func main() {
 }
 
 func initProgram() model {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
 	//TODO:  fetch symbols from the database
 	// _ := database.Open()
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+
+	ti := textinput.New()
+	ti.Placeholder = "Pikachu"
+	ti.Focus()
+	ti.CharLimit = 156
+	ti.Width = 20
+
 	m := model{
-		symbols: []string{"NABIL", "HDL"},
-		quotes:  make(map[string]nepse.Quote),
-		loading: true,
-		spinner: s,
+		symbols:   []string{"NABIL", "HDL", "EBL", "SNLI", "NTC", "SHEL"},
+		quotes:    make(map[string]nepse.Quote),
+		loading:   true,
+		spinner:   s,
+		textInput: ti,
 	}
 
 	return m
@@ -71,28 +81,51 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return m, tea.Quit
 
-		case "a":
+		case "q":
+			if !m.addMode {
+				return m, tea.Quit
+			}
 
+		case "a":
+			if !m.addMode {
+				m.addMode = true
+				m.inputSymbol = ""
+				return m, textinput.Blink
+			}
 		case "r":
-			m.loading = true
-			return m, fetchQuotes(m.symbols)
+			if !m.addMode {
+				m.loading = true
+				return m, fetchQuotes(m.symbols)
+			}
 
 		case "enter":
+			// TODO: save the symbol in the database
+			// TODO: set m.addMode = false
+			if m.addMode {
+				m.addMode = false
+				m.inputSymbol = m.textInput.Value()
+				m.symbols = append(m.symbols, m.inputSymbol)
+				m.loading = true
+				return m, fetchQuotes(m.symbols)
+			}
 		}
 
 	case tickMsg:
 		return m, tea.Tick(time.Second*5, func(t time.Time) tea.Msg {
 			return tickMsg{}
 		})
+
 	case quotesMsg:
 		m.quotes = msg
 		m.loading = false
+
 	case errMsg:
 		m.err = msg
 		m.loading = false
+
 	default:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -106,6 +139,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return tickMsg{}
 		}))
 	}
+
+	m.textInput, _ = m.textInput.Update(msg)
 
 	return m, tea.Batch(cmds...)
 }
@@ -133,6 +168,19 @@ func (m model) View() string {
 			Width(100).
 			Foreground(lipgloss.Color("#4287f5")).
 			Render(m.spinner.View() + "Loading stock prices...")
+	}
+
+	if m.addMode {
+		inputView := fmt.Sprintf(
+			"\n\n\n Add the symbol to fetch quotes? \n\n%s\n\n",
+			m.textInput.View(),
+		) + "\n"
+
+		return lipgloss.NewStyle().
+			Align(lipgloss.Center).
+			Height(40).
+			Width(100).
+			Render(menu + inputView)
 	}
 
 	var rows []string
