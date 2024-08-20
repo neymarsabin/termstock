@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/lipgloss v0.12.1
 	github.com/gocolly/colly/v2 v2.1.0
+	github.com/joho/godotenv v1.5.1
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.11
 )

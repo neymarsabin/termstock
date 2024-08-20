@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/joho/godotenv"
 	"github.com/neymarsabin/termstock/database"
 	"github.com/neymarsabin/termstock/nepse"
 	"gorm.io/gorm"
@@ -27,6 +28,10 @@ type model struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	p := tea.NewProgram(initProgram(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Alas, there's been an error: %v", err)

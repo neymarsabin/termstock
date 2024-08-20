@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 )
 
 type CategoryType struct {
@@ -26,7 +27,7 @@ type MarketData map[string]CategoryType
 
 func FetchMarketStat() MarketData {
 	var responseFromServer Response
-	var connectionToken = "8lZ52wDXnVW8vrn5_3hRBgdTW2i4XjfqmhdK9lrGEh6mgM3N_xxGJ3QBnb0x_X3U9CniTL8GiWlTgBTDi6Q4PB75_6pAOEio-KDa40usuFgdo6ZIdfdvmtMBK437ua8YMjkt2j-ewxrXP6dq5lMpTD9P--SOLFAvtBzZG2mKCaV8DNTNOFFQDIvMfhogJ3uA0"
+	var connectionToken = os.Getenv("NEPSE_CONNECTION_TOKEN")
 	url := "https://merolagani.com/signalr/send?transport=serverSentEvents&connectionToken=" + connectionToken
 	data := `data=%7B%22H%22%3A%22stocktickerhub%22%2C%22M%22%3A%22GetAllStocks%22%2C%22A%22%3A%5B%5D%2C%22I%22%3A0%7D`
 	body := []byte(data)
