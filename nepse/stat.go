@@ -1,4 +1,4 @@
-package market
+package nepse
 
 import (
 	"bytes"

@@ -112,8 +112,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
-			// TODO: save the symbol in the database
-			// TODO: set m.addMode = false
 			if m.addMode {
 				m.addMode = false
 				m.inputSymbol = m.textInput.Value()
