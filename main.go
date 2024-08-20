@@ -41,7 +41,7 @@ func initProgram() model {
 	s.Spinner = spinner.Dot
 
 	ti := textinput.New()
-	ti.Placeholder = "Pikachu"
+	ti.Placeholder = "Enter a symbol"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 20
